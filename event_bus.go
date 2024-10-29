@@ -2,11 +2,13 @@
 package events
 
 import (
-	"log"
 	"sync"
 	"time"
 
 	"github.com/goletan/events/types"
+	"github.com/goletan/observability/logger"
+	"github.com/goletan/observability/metrics"
+	"go.uber.org/zap"
 )
 
 // EventBus manages the publishing and subscription of events in a thread-safe manner.
@@ -27,16 +29,13 @@ type Subscriber struct {
 }
 
 // NewEventBus creates a new instance of EventBus with a default retry policy and dead-letter queue.
-func NewEventBus(bulkheadCapacity, dlqMaxSize int) *EventBus {
+func NewEventBus(bulkheadCapacity, dlqMaxSize int, retryPolicy types.RetryPolicy) *EventBus {
 	return &EventBus{
-		subscribers: make(map[string]map[int][]*Subscriber),
-		shutdown:    make(chan struct{}),
-		defaultRetryPolicy: types.RetryPolicy{
-			MaxRetries: 3,
-			Backoff:    100 * time.Millisecond,
-		},
-		bulkheads:        make(map[string]chan types.Event),
-		bulkheadCapacity: bulkheadCapacity,
+		subscribers:        make(map[string]map[int][]*Subscriber),
+		shutdown:           make(chan struct{}),
+		defaultRetryPolicy: retryPolicy,
+		bulkheads:          make(map[string]chan types.Event),
+		bulkheadCapacity:   bulkheadCapacity,
 		dlq: &types.DeadLetterQueue{
 			Queue:   make(chan types.Event, dlqMaxSize),
 			MaxSize: dlqMaxSize,
@@ -49,7 +48,8 @@ func (eb *EventBus) Publish(event types.Event) {
 	eb.mu.RLock()
 	defer eb.mu.RUnlock()
 
-	log.Printf("Publishing event: %s with priority: %d", event.Name, event.Priority)
+	logger.Info("Publishing event", zap.String("event_name", event.Name), zap.Int("priority", event.Priority))
+	metrics.IncrementEventPublished(event.Name)
 
 	// Use bulkhead to prevent overloading
 	bulkhead, exists := eb.bulkheads[event.Name]
@@ -61,9 +61,10 @@ func (eb *EventBus) Publish(event types.Event) {
 
 	select {
 	case bulkhead <- event:
-		log.Printf("Event added to bulkhead: %s", event.Name)
+		logger.Info("Event added to bulkhead", zap.String("event_name", event.Name))
 	default:
-		log.Printf("Bulkhead full, dropping event: %s", event.Name)
+		logger.Warn("Bulkhead full, dropping event", zap.String("event_name", event.Name))
+		metrics.IncrementEventDropped(event.Name)
 	}
 }
 
@@ -72,9 +73,10 @@ func (eb *EventBus) processBulkhead(eventName string, bulkhead chan types.Event)
 	for {
 		select {
 		case <-eb.shutdown:
-			log.Printf("Shutting down bulkhead processor for event: %s", eventName)
+			logger.Info("Shutting down bulkhead processor", zap.String("event_name", eventName))
 			return
 		case event := <-bulkhead:
+			metrics.IncrementEventProcessed(event.Name)
 			if prioritySubs, found := eb.subscribers[event.Name]; found {
 				// Publish to subscribers by priority
 				for priority := 1; priority <= 3; priority++ {
@@ -98,14 +100,16 @@ func (eb *EventBus) sendWithRetry(sub *Subscriber, event types.Event) bool {
 	for i := 0; i < eb.defaultRetryPolicy.MaxRetries+1; i++ { // +1 to include the initial attempt
 		select {
 		case sub.ch <- event:
-			log.Printf("Event sent successfully: %s after %d attempts", event.Name, i+1)
+			logger.Info("Event sent successfully", zap.String("event_name", event.Name), zap.Int("attempt", i+1))
+			metrics.IncrementEventSent(event.Name)
 			return true
 		default:
-			log.Printf("Subscriber channel full, retrying event: %s (%d/%d)", event.Name, i+1, eb.defaultRetryPolicy.MaxRetries)
+			logger.Warn("Subscriber channel full, retrying event", zap.String("event_name", event.Name), zap.Int("attempt", i+1), zap.Int("max_retries", eb.defaultRetryPolicy.MaxRetries))
 			time.Sleep(eb.defaultRetryPolicy.Backoff)
 		}
 	}
-	log.Printf("Failed to send event after %d attempts: %s", eb.defaultRetryPolicy.MaxRetries, event.Name)
+	logger.Error("Failed to send event after max attempts", zap.String("event_name", event.Name), zap.Int("max_retries", eb.defaultRetryPolicy.MaxRetries))
+	metrics.IncrementEventFailed(event.Name)
 	return false
 }
 
@@ -113,9 +117,11 @@ func (eb *EventBus) sendWithRetry(sub *Subscriber, event types.Event) bool {
 func (eb *EventBus) sendToDLQ(event types.Event) {
 	select {
 	case eb.dlq.Queue <- event:
-		log.Printf("Event sent to Dead-Letter Queue: %s", event.Name)
+		logger.Warn("Event sent to Dead-Letter Queue", zap.String("event_name", event.Name))
+		metrics.IncrementEventDLQ(event.Name)
 	default:
-		log.Printf("Dead-Letter Queue full, dropping event: %s", event.Name)
+		logger.Error("Dead-Letter Queue full, dropping event", zap.String("event_name", event.Name))
+		metrics.IncrementEventDropped(event.Name)
 	}
 }
 
@@ -135,7 +141,8 @@ func (eb *EventBus) Subscribe(eventName string, priority int, filter types.Filte
 	}
 	eb.subscribers[eventName][priority] = append(eb.subscribers[eventName][priority], subscriber)
 
-	log.Printf("Subscriber added for event: %s with priority: %d", eventName, priority)
+	logger.Info("Subscriber added", zap.String("event_name", eventName), zap.Int("priority", priority))
+	metrics.IncrementSubscriberAdded(eventName)
 	return ch
 }
 
@@ -150,7 +157,8 @@ func (eb *EventBus) Unsubscribe(eventName string, subscriber chan types.Event) {
 				if sub.ch == subscriber {
 					close(sub.ch)
 					eb.subscribers[eventName][priority] = append(subs[:i], subs[i+1:]...)
-					log.Printf("Subscriber removed for event: %s with priority: %d", eventName, priority)
+					logger.Info("Subscriber removed", zap.String("event_name", eventName), zap.Int("priority", priority))
+					metrics.IncrementSubscriberRemoved(eventName)
 					break
 				}
 			}
@@ -173,5 +181,5 @@ func (eb *EventBus) Shutdown() {
 	}
 
 	eb.subscribers = make(map[string]map[int][]*Subscriber)
-	log.Println("EventBus has been shut down gracefully")
+	logger.Info("EventBus has been shut down gracefully")
 }

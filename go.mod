@@ -2,18 +2,18 @@ module github.com/goletan/events
 
 go 1.23.2
 
-replace github.com/goletan/observability => ../observability
-
-replace github.com/goletan/services => ../services
-
-replace github.com/goletan/config => ../config
-
 require (
 	github.com/goletan/observability v0.0.0-00010101000000-000000000000
 	github.com/goletan/services v0.0.0-00010101000000-000000000000
 	github.com/gorilla/mux v1.8.1
 	go.uber.org/zap v1.27.0
 )
+
+replace github.com/goletan/observability => ../observability
+
+replace github.com/goletan/services => ../services
+
+replace github.com/goletan/config => ../config
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect

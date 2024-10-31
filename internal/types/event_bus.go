@@ -1,8 +1,23 @@
+// /events/internal/types/event_bus.go
 package types
 
 import (
 	"time"
 )
+
+// EventConfig
+type EventsConfig struct {
+	EventBus struct {
+		BulkheadCapacity   int `mapstructure:"bulkhead_capacity"`
+		DefaultRetryPolicy struct {
+			MaxRetries int           `mapstructure:"max_retries"`
+			Backoff    time.Duration `mapstructure:"backoff"`
+		} `mapstructure:"default_retry_policy"`
+		DLQ struct {
+			MaxSize int `mapstructure:"max_size"`
+		} `mapstructure:"dlq"`
+	} `mapstructure:"event_bus"`
+}
 
 // Event represents an event with a name, payload, and priority.
 type Event struct {

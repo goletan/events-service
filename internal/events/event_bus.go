@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/goletan/events/types"
+	"github.com/goletan/events/internal/types"
 	"github.com/goletan/observability/logger"
 	"go.uber.org/zap"
 )
@@ -28,16 +28,19 @@ type Subscriber struct {
 }
 
 // NewEventBus creates a new instance of EventBus with a default retry policy and dead-letter queue.
-func NewEventBus(bulkheadCapacity, dlqMaxSize int, retryPolicy types.RetryPolicy) *EventBus {
+func NewEventBus(cfg *types.EventsConfig) *EventBus {
 	return &EventBus{
-		subscribers:        make(map[string]map[int][]*Subscriber),
-		shutdown:           make(chan struct{}),
-		defaultRetryPolicy: retryPolicy,
-		bulkheads:          make(map[string]chan types.Event),
-		bulkheadCapacity:   bulkheadCapacity,
+		subscribers: make(map[string]map[int][]*Subscriber),
+		shutdown:    make(chan struct{}),
+		defaultRetryPolicy: types.RetryPolicy{
+			MaxRetries: cfg.EventBus.DefaultRetryPolicy.MaxRetries,
+			Backoff:    cfg.EventBus.DefaultRetryPolicy.Backoff,
+		},
+		bulkheads:        make(map[string]chan types.Event),
+		bulkheadCapacity: cfg.EventBus.BulkheadCapacity,
 		dlq: &types.DeadLetterQueue{
-			Queue:   make(chan types.Event, dlqMaxSize),
-			MaxSize: dlqMaxSize,
+			Queue:   make(chan types.Event, cfg.EventBus.DLQ.MaxSize),
+			MaxSize: cfg.EventBus.DLQ.MaxSize,
 		},
 	}
 }
@@ -63,63 +66,6 @@ func (eb *EventBus) Publish(event types.Event) {
 		logger.Info("Event added to bulkhead", zap.String("event_name", event.Name))
 	default:
 		logger.Warn("Bulkhead full, dropping event", zap.String("event_name", event.Name))
-		IncrementEventDropped(event.Name)
-	}
-}
-
-// processBulkhead processes events from a bulkhead channel.
-func (eb *EventBus) processBulkhead(eventName string, bulkhead chan types.Event) {
-	for {
-		select {
-		case <-eb.shutdown:
-			logger.Info("Shutting down bulkhead processor", zap.String("event_name", eventName))
-			return
-		case event := <-bulkhead:
-			IncrementEventProcessed(event.Name)
-			if prioritySubs, found := eb.subscribers[event.Name]; found {
-				// Publish to subscribers by priority
-				for priority := 1; priority <= 3; priority++ {
-					if subs, exists := prioritySubs[priority]; exists {
-						for _, sub := range subs {
-							if !eb.sendWithRetry(sub, event) {
-								// Send to DLQ if sending fails after retries
-								eb.sendToDLQ(event)
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-}
-
-// sendWithRetry sends an event to a subscriber, retrying based on the EventBus's retry policy.
-// Returns true if the event was sent successfully, false otherwise.
-func (eb *EventBus) sendWithRetry(sub *Subscriber, event types.Event) bool {
-	for i := 0; i < eb.defaultRetryPolicy.MaxRetries+1; i++ { // +1 to include the initial attempt
-		select {
-		case sub.ch <- event:
-			logger.Info("Event sent successfully", zap.String("event_name", event.Name), zap.Int("attempt", i+1))
-			IncrementEventSent(event.Name)
-			return true
-		default:
-			logger.Warn("Subscriber channel full, retrying event", zap.String("event_name", event.Name), zap.Int("attempt", i+1), zap.Int("max_retries", eb.defaultRetryPolicy.MaxRetries))
-			time.Sleep(eb.defaultRetryPolicy.Backoff)
-		}
-	}
-	logger.Error("Failed to send event after max attempts", zap.String("event_name", event.Name), zap.Int("max_retries", eb.defaultRetryPolicy.MaxRetries))
-	IncrementEventFailed(event.Name)
-	return false
-}
-
-// sendToDLQ sends an event to the Dead-Letter Queue for further investigation.
-func (eb *EventBus) sendToDLQ(event types.Event) {
-	select {
-	case eb.dlq.Queue <- event:
-		logger.Warn("Event sent to Dead-Letter Queue", zap.String("event_name", event.Name))
-		IncrementEventDQL(event.Name)
-	default:
-		logger.Error("Dead-Letter Queue full, dropping event", zap.String("event_name", event.Name))
 		IncrementEventDropped(event.Name)
 	}
 }
@@ -181,4 +127,61 @@ func (eb *EventBus) Shutdown() {
 
 	eb.subscribers = make(map[string]map[int][]*Subscriber)
 	logger.Info("EventBus has been shut down gracefully")
+}
+
+// processBulkhead processes events from a bulkhead channel.
+func (eb *EventBus) processBulkhead(eventName string, bulkhead chan types.Event) {
+	for {
+		select {
+		case <-eb.shutdown:
+			logger.Info("Shutting down bulkhead processor", zap.String("event_name", eventName))
+			return
+		case event := <-bulkhead:
+			IncrementEventProcessed(event.Name)
+			if prioritySubs, found := eb.subscribers[event.Name]; found {
+				// Publish to subscribers by priority
+				for priority := 1; priority <= 3; priority++ {
+					if subs, exists := prioritySubs[priority]; exists {
+						for _, sub := range subs {
+							if !eb.sendWithRetry(sub, event) {
+								// Send to DLQ if sending fails after retries
+								eb.sendToDLQ(event)
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+// sendWithRetry sends an event to a subscriber, retrying based on the EventBus's retry policy.
+// Returns true if the event was sent successfully, false otherwise.
+func (eb *EventBus) sendWithRetry(sub *Subscriber, event types.Event) bool {
+	for i := 0; i < eb.defaultRetryPolicy.MaxRetries+1; i++ { // +1 to include the initial attempt
+		select {
+		case sub.ch <- event:
+			logger.Info("Event sent successfully", zap.String("event_name", event.Name), zap.Int("attempt", i+1))
+			IncrementEventSent(event.Name)
+			return true
+		default:
+			logger.Warn("Subscriber channel full, retrying event", zap.String("event_name", event.Name), zap.Int("attempt", i+1), zap.Int("max_retries", eb.defaultRetryPolicy.MaxRetries))
+			time.Sleep(eb.defaultRetryPolicy.Backoff)
+		}
+	}
+	logger.Error("Failed to send event after max attempts", zap.String("event_name", event.Name), zap.Int("max_retries", eb.defaultRetryPolicy.MaxRetries))
+	IncrementEventFailed(event.Name)
+	return false
+}
+
+// sendToDLQ sends an event to the Dead-Letter Queue for further investigation.
+func (eb *EventBus) sendToDLQ(event types.Event) {
+	select {
+	case eb.dlq.Queue <- event:
+		logger.Warn("Event sent to Dead-Letter Queue", zap.String("event_name", event.Name))
+		IncrementEventDQL(event.Name)
+	default:
+		logger.Error("Dead-Letter Queue full, dropping event", zap.String("event_name", event.Name))
+		IncrementEventDropped(event.Name)
+	}
 }

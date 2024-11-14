@@ -1,7 +1,8 @@
-package events
+// /events/internal/config/config.go
+package config
 
 import (
-	"github.com/goletan/config"
+	config "github.com/goletan/config/pkg"
 	"github.com/goletan/events/internal/types"
 	"go.uber.org/zap"
 )

@@ -1,7 +1,7 @@
-package events
+package metrics
 
 import (
-	"github.com/goletan/observability/metrics"
+	observability "github.com/goletan/observability/pkg"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -83,8 +83,8 @@ var (
 	)
 )
 
-func InitMetrics() {
-	metrics.NewManager().Register(&EventsMetrics{})
+func InitMetrics(observer *observability.Observability) {
+	observer.Metrics.Register(&EventsMetrics{})
 }
 
 func (em *EventsMetrics) Register() error {

@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/goletan/events/internal/config"
 	"github.com/goletan/events/internal/metrics"
 	"github.com/goletan/events/internal/types"
 	observability "github.com/goletan/observability/pkg"
@@ -30,7 +31,12 @@ type Subscriber struct {
 }
 
 // NewEventBus creates a new instance of EventBus with a default retry policy and dead-letter queue.
-func NewEventBus(cfg *types.EventsConfig, obs *observability.Observability) *EventBus {
+func NewEventBus(obs *observability.Observability) *EventBus {
+	cfg, err := config.LoadEventsConfig(obs.Logger)
+	if err == nil {
+		obs.Logger.Fatal("Failed to load resilience configuration", zap.Error(err))
+	}
+
 	return &EventBus{
 		subscribers: make(map[string]map[int][]*Subscriber),
 		shutdown:    make(chan struct{}),

@@ -1,7 +1,7 @@
 package metrics
 
 import (
-	observability "github.com/goletan/observability/pkg"
+	"github.com/goletan/observability/pkg"
 	"github.com/prometheus/client_golang/prometheus"
 )
 

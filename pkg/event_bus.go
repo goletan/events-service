@@ -1,4 +1,3 @@
-// /events/pkg/event_bus.go
 package events
 
 import (
@@ -8,7 +7,7 @@ import (
 	"github.com/goletan/events/internal/config"
 	"github.com/goletan/events/internal/metrics"
 	"github.com/goletan/events/internal/types"
-	observability "github.com/goletan/observability/pkg"
+	"github.com/goletan/observability/pkg"
 	"go.uber.org/zap"
 )
 
@@ -32,8 +31,8 @@ type Subscriber struct {
 
 // NewEventBus creates a new instance of EventBus with a default retry policy and dead-letter queue.
 func NewEventBus(obs *observability.Observability) *EventBus {
-	cfg, err := config.LoadEventsConfig(obs.Logger)
-	if err == nil {
+	cfg, err := config.LoadEventsConfig(obs)
+	if err != nil {
 		obs.Logger.Fatal("Failed to load resilience configuration", zap.Error(err))
 	}
 

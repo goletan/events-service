@@ -1,4 +1,3 @@
-// /events/internal/types/event_bus.go
 package types
 
 import (
@@ -19,13 +18,6 @@ type EventsConfig struct {
 	} `mapstructure:"event_bus"`
 }
 
-// Event represents an event with a name, payload, and priority.
-type Event struct {
-	Name     string
-	Payload  interface{}
-	Priority int // 1 = High, 2 = Medium, 3 = Low
-}
-
 // RetryPolicy represents the configuration for retrying event delivery.
 type RetryPolicy struct {
 	MaxRetries int           // Maximum number of retries
@@ -36,6 +28,13 @@ type RetryPolicy struct {
 type DeadLetterQueue struct {
 	Queue   chan Event
 	MaxSize int
+}
+
+// Event represents an event with a name, payload, and priority.
+type Event struct {
+	Name     string
+	Payload  interface{}
+	Priority int // 1 = High, 2 = Medium, 3 = Low
 }
 
 // FilterFunc defines a function signature for filtering events.

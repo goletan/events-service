@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// EventConfig
+// EventsConfig holds the events service configuration
 type EventsConfig struct {
 	EventBus struct {
 		BulkheadCapacity   int `mapstructure:"bulkhead_capacity"`

@@ -154,12 +154,12 @@ func IncrementEventDQL(eventType string) {
 	EventDLQ.WithLabelValues(eventType).Inc()
 }
 
-// SubscriberAdded increments the number of subscriber added counter.
+// IncrementSubscriberAdded increments the number of subscriber added counter.
 func IncrementSubscriberAdded(eventType string) {
 	SubscriberAdded.WithLabelValues(eventType).Inc()
 }
 
-// SubscriberRemoved increments the number of subscriber removed counter.
+// IncrementSubscriberRemoved increments the number of subscriber removed counter.
 func IncrementSubscriberRemoved(eventType string) {
 	SubscriberRemoved.WithLabelValues(eventType).Inc()
 }

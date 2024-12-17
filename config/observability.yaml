@@ -1,0 +1,14 @@
+# Observability Config
+environment: "dev"
+
+bulkhead:
+  capacity: 1
+  timeout: 5s
+
+logger:
+  log_level: "INFO"
+
+tracing:
+  service_name: "Goletan Events"
+  exporter: ""
+  sampling_ratio: 3.14

@@ -1,8 +1,0 @@
-event_bus:
-  broker: "localhost:9092"
-  bulkhead_capacity: 500
-  default_retry_policy:
-    max_retries: 3
-    backoff: 10s
-  dlq:
-    max_size: 100

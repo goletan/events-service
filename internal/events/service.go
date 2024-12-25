@@ -4,7 +4,7 @@ import (
 	"fmt"
 	observability "github.com/goletan/observability-library/pkg"
 	services "github.com/goletan/services-library/pkg"
-	"github.com/goletan/services/shared/types"
+	"github.com/goletan/services-library/shared/types"
 )
 
 type EventsService struct {

@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"github.com/apache/pulsar-client-go/pulsar"
-	"github.com/goletan/events/internal/config"
-	"github.com/goletan/events/internal/types"
+	"github.com/goletan/events-service/internal/config"
+	"github.com/goletan/events-service/internal/types"
 	observability "github.com/goletan/observability-library/pkg"
 	"go.uber.org/zap"
 	"log"

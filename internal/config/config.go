@@ -1,8 +1,8 @@
 package config
 
 import (
-	"github.com/goletan/config/pkg"
-	"github.com/goletan/events/internal/types"
+	"github.com/goletan/config-library/pkg"
+	"github.com/goletan/events-service/internal/types"
 	observability "github.com/goletan/observability-library/pkg"
 	"go.uber.org/zap"
 )

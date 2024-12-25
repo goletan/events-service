@@ -5,7 +5,7 @@ import (
 	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/goletan/events/internal/config"
 	"github.com/goletan/events/internal/types"
-	observability "github.com/goletan/observability/pkg"
+	observability "github.com/goletan/observability-library/pkg"
 	"go.uber.org/zap"
 	"log"
 	"os"
@@ -18,7 +18,7 @@ func main() {
 	shutdownCtx, shutdownCancel := setupShutdownContext()
 	defer shutdownCancel()
 
-	// Initialize observability
+	// Initialize observability-library
 	obs := initializeObservability()
 
 	// Initialize configuration
@@ -57,11 +57,11 @@ func setupShutdownContext() (context.Context, context.CancelFunc) {
 	return ctx, cancel
 }
 
-// initializeObservability initializes the observability components.
+// initializeObservability initializes the observability-library components.
 func initializeObservability() *observability.Observability {
 	obs, err := observability.NewObserver()
 	if err != nil {
-		log.Fatal("Failed to initialize observability", err)
+		log.Fatal("Failed to initialize observability-library", err)
 	}
 	return obs
 }

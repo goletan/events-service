@@ -1,6 +1,6 @@
 package types
 
-// EventsConfig holds the events service configuration
+// EventsConfig holds the events-service service configuration
 type EventsConfig struct {
 	Events struct {
 		ServiceName string `mapstructure:"service_name"`
@@ -19,5 +19,5 @@ type EventsConfig struct {
 				} `mapstructure:"subscription"`
 			} `mapstructure:"consumer"`
 		} `mapstructure:"event"`
-	} `mapstructure:"events"`
+	} `mapstructure:"events-service"`
 }

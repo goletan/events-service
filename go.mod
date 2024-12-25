@@ -1,4 +1,4 @@
-module github.com/goletan/events
+module github.com/goletan/events-service
 
 go 1.23
 

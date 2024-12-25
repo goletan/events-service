@@ -12,61 +12,61 @@ var (
 	EventPublished = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "goletan",
-			Subsystem: "events",
+			Subsystem: "events-service",
 			Name:      "published_total",
-			Help:      "Total number of events published.",
+			Help:      "Total number of events-service published.",
 		},
 		[]string{"event_type"},
 	)
 	EventDropped = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "goletan",
-			Subsystem: "events",
+			Subsystem: "events-service",
 			Name:      "dropped_total",
-			Help:      "Total number of events dropped.",
+			Help:      "Total number of events-service dropped.",
 		},
 		[]string{"event_type"},
 	)
 	EventProcessed = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "goletan",
-			Subsystem: "events",
+			Subsystem: "events-service",
 			Name:      "processed_total",
-			Help:      "Total number of events processed.",
+			Help:      "Total number of events-service processed.",
 		},
 		[]string{"event_type"},
 	)
 	EventSent = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "goletan",
-			Subsystem: "events",
+			Subsystem: "events-service",
 			Name:      "sent_total",
-			Help:      "Total number of events sent.",
+			Help:      "Total number of events-service sent.",
 		},
 		[]string{"event_type"},
 	)
 	EventFailed = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "goletan",
-			Subsystem: "events",
+			Subsystem: "events-service",
 			Name:      "failed_total",
-			Help:      "Total number of events failed.",
+			Help:      "Total number of events-service failed.",
 		},
 		[]string{"event_type"},
 	)
 	EventDLQ = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "goletan",
-			Subsystem: "events",
+			Subsystem: "events-service",
 			Name:      "dlq_total",
-			Help:      "Total number of events dead letter queue.",
+			Help:      "Total number of events-service dead letter queue.",
 		},
 		[]string{"event_type"},
 	)
 	SubscriberAdded = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "goletan",
-			Subsystem: "events",
+			Subsystem: "events-service",
 			Name:      "subscriber_added_total",
 			Help:      "Total number of subscriber added.",
 		},
@@ -75,7 +75,7 @@ var (
 	SubscriberRemoved = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "goletan",
-			Subsystem: "events",
+			Subsystem: "events-service",
 			Name:      "subscriber_removed_total",
 			Help:      "Total number of subscriber removed.",
 		},

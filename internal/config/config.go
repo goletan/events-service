@@ -3,7 +3,7 @@ package config
 import (
 	"github.com/goletan/config/pkg"
 	"github.com/goletan/events/internal/types"
-	observability "github.com/goletan/observability/pkg"
+	observability "github.com/goletan/observability-library/pkg"
 	"go.uber.org/zap"
 )
 
@@ -14,7 +14,7 @@ func LoadEventsConfig(obs *observability.Observability) (*types.EventsConfig, er
 		obs.Logger.WithContext(map[string]interface{}{
 			"step":    "config loading",
 			"error":   zap.Error(err),
-			"message": "Failed to load events configuration",
+			"message": "Failed to load events-service configuration",
 		})
 		return nil, err
 	}

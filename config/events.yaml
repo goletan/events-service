@@ -1,11 +1,11 @@
 events:
-  service_name: "events"
+  service_name: "events-service"
   pulsar:
     broker:
       url:
   event:
     producer:
-      topic: "events-topic"
+      topic: "events-service-topic"
     consumer:
       subscription:
-        name: "goletan-events-subscription"
+        name: "goletan-events-service-subscription"

@@ -1,14 +1,18 @@
 # Observability Config
 environment: "dev"
 
+metrics:
+  address: ":2113"
+
 bulkhead:
   capacity: 1
   timeout: 5s
 
 logger:
-  log_level: "INFO"
+  log_level: "info"
 
 tracing:
   service_name: "Goletan Events"
-  exporter: ""
+  endpoint: "collector:4317"
+  exporter: stdout
   sampling_ratio: 3.14

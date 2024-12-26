@@ -1,7 +1,7 @@
 package metrics
 
 import (
-	"github.com/goletan/observability-library/pkg"
+	observability "github.com/goletan/observability-library/pkg"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -12,7 +12,7 @@ var (
 	EventPublished = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "goletan",
-			Subsystem: "events-service",
+			Subsystem: "events_service",
 			Name:      "published_total",
 			Help:      "Total number of events-service published.",
 		},
@@ -21,7 +21,7 @@ var (
 	EventDropped = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "goletan",
-			Subsystem: "events-service",
+			Subsystem: "events_service",
 			Name:      "dropped_total",
 			Help:      "Total number of events-service dropped.",
 		},
@@ -30,7 +30,7 @@ var (
 	EventProcessed = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "goletan",
-			Subsystem: "events-service",
+			Subsystem: "events_service",
 			Name:      "processed_total",
 			Help:      "Total number of events-service processed.",
 		},
@@ -39,7 +39,7 @@ var (
 	EventSent = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "goletan",
-			Subsystem: "events-service",
+			Subsystem: "events_service",
 			Name:      "sent_total",
 			Help:      "Total number of events-service sent.",
 		},
@@ -48,7 +48,7 @@ var (
 	EventFailed = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "goletan",
-			Subsystem: "events-service",
+			Subsystem: "events_service",
 			Name:      "failed_total",
 			Help:      "Total number of events-service failed.",
 		},
@@ -57,7 +57,7 @@ var (
 	EventDLQ = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "goletan",
-			Subsystem: "events-service",
+			Subsystem: "events_service",
 			Name:      "dlq_total",
 			Help:      "Total number of events-service dead letter queue.",
 		},
@@ -66,7 +66,7 @@ var (
 	SubscriberAdded = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "goletan",
-			Subsystem: "events-service",
+			Subsystem: "events_service",
 			Name:      "subscriber_added_total",
 			Help:      "Total number of subscriber added.",
 		},
@@ -75,7 +75,7 @@ var (
 	SubscriberRemoved = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "goletan",
-			Subsystem: "events-service",
+			Subsystem: "events_service",
 			Name:      "subscriber_removed_total",
 			Help:      "Total number of subscriber removed.",
 		},

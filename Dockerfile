@@ -1,39 +1,28 @@
-# Base image
-FROM golang:1.20-alpine AS builder
-
-# Set environment variables
-ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
-
-# Set working directory
+# Build Stage
+FROM golang:1.23 AS builder
 WORKDIR /app
 
-# Copy the Go modules files
-COPY go.mod go.sum ./
-
-# Copy go.work and all referenced directories
 COPY go.work .
-COPY config ./config
-COPY logger ./logger
-COPY observability ./observability
-COPY resilience ./resilience
-COPY security ./security
-COPY services ./services
+COPY events-service ./events-service
+COPY config-library ./config-library
+COPY logger-library ./logger-library
+COPY observability-library ./observability-library
+COPY resilience-library ./resilience-library
+COPY security-library ./security-library
+COPY services-library ./services-library
 
-# Sync Go work dependencies
 RUN go work sync
+RUN CGO_ENABLED=0 GOOS=linux go build -o events events-service/cmd/events/main.go
 
-# Build the Events Service binary
-RUN go build -o events-service cmd/events-service/main.go
+# Runtime Stage
+FROM gcr.io/distroless/static:nonroot AS runtime
+WORKDIR /app
 
-# Final runtime image
-FROM alpine:latest
-WORKDIR /root/
+COPY --from=builder /app/events /app/events
+COPY events-service/config /app/config
 
-# Copy the binary from the builder stage
-COPY --from=builder /app/events .
+USER nonroot:nonroot
 
-# Expose ports (adjust based on your app's requirements)
-EXPOSE 9090 2112
+EXPOSE 6650 2113
 
-# Start the Events Service
-ENTRYPOINT ["./events"]
+ENTRYPOINT ["/app/events"]

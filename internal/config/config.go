@@ -7,9 +7,8 @@ import (
 	"go.uber.org/zap"
 )
 
-var cfg types.EventsConfig
-
 func LoadEventsConfig(obs *observability.Observability) (*types.EventsConfig, error) {
+	var cfg types.EventsConfig
 	if err := config.LoadConfig("Events", &cfg, obs.Logger); err != nil {
 		obs.Logger.WithContext(map[string]interface{}{
 			"step":    "config loading",

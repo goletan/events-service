@@ -1,0 +1,30 @@
+bulkhead:
+  capacity: 100
+  timeout: "1s"
+
+circuit_breaker:
+  failure_rate_threshold: 50.0
+  failure_threshold: 5
+  success_threshold: 3
+  consecutive_failures: 3
+  max_requests: 10
+  interval: "10s"
+  timeout: "5s"
+  state_duration: "30s"
+
+rate_limiter:
+  rps: 100
+  burst: 10
+
+retry:
+  max_retries: 5
+  initial_backoff: "100ms"
+  max_backoff: "1s"
+  backoff_factor: 2.0
+
+dlq:
+  topic: "dead-letter-topic"
+  brokers:
+    - "broker1:9092"
+    - "broker2:9092"
+  group_id: "dlq-group"

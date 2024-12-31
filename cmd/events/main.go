@@ -3,9 +3,8 @@ package main
 import (
 	"context"
 	"github.com/goletan/events-service/internal/config"
-	"github.com/goletan/events-service/internal/events"
-	observabilityLib "github.com/goletan/observability-library/pkg"
-	servicesLib "github.com/goletan/services-library/pkg"
+	"github.com/goletan/events-service/internal/service"
+	"github.com/goletan/observability-library/pkg"
 	"go.uber.org/zap"
 	"log"
 	"os"
@@ -14,11 +13,11 @@ import (
 )
 
 func main() {
-	// Graceful shutdown setup
+	// Graceful shutdown context
 	shutdownCtx, shutdownCancel := setupShutdownContext()
 	defer shutdownCancel()
 
-	// Initialize observabilityLib
+	// Initialize observability
 	obs := initializeObservability()
 
 	// Load configuration
@@ -27,25 +26,10 @@ func main() {
 		obs.Logger.Fatal("Failed to load configuration", zap.Error(err))
 	}
 
-	// Initialize the Services Library
-	services, err := servicesLib.NewServices(obs)
-	if err != nil {
-		obs.Logger.Fatal("Failed to initialize services library", zap.Error(err))
-	}
-
-	// Create and register the Events Service
-	eventsService := events.NewService(cfg.ServiceName, obs, cfg)
-	if err := services.Register(eventsService); err != nil {
-		obs.Logger.Fatal("Failed to register Events Service", zap.Error(err))
-	}
-
-	// Initialize and start the service
-	if err := services.InitializeAll(shutdownCtx); err != nil {
-		obs.Logger.Fatal("Failed to initialize services", zap.Error(err))
-	}
-
-	if err := services.StartAll(shutdownCtx); err != nil {
-		obs.Logger.Fatal("Failed to start services", zap.Error(err))
+	// Create and run the Events Service
+	eventsService := service.NewEventsService(cfg, obs)
+	if err := eventsService.Run(shutdownCtx); err != nil {
+		obs.Logger.Fatal("Failed to run Events Service", zap.Error(err))
 	}
 
 	obs.Logger.Info("Events Service is running...")
@@ -65,11 +49,11 @@ func setupShutdownContext() (context.Context, context.CancelFunc) {
 	return ctx, cancel
 }
 
-// initializeObservability initializes the observabilityLib-library components.
-func initializeObservability() *observabilityLib.Observability {
-	obs, err := observabilityLib.NewObserver()
+// initializeObservability initializes observability components.
+func initializeObservability() *observability.Observability {
+	obs, err := observability.NewObserver()
 	if err != nil {
-		log.Fatal("Failed to initialize observabilityLib-library", err)
+		log.Fatal("Failed to initialize observability", err)
 	}
 	return obs
 }

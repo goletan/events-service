@@ -3,11 +3,13 @@ package types
 // EventsConfig holds the events-service service configuration
 type EventsConfig struct {
 	ServiceName string `mapstructure:"service_name"`
-	Pulsar      struct {
+
+	Pulsar struct {
 		Broker struct {
 			URL string `mapstructure:"url"`
 		} `mapstructure:"broker"`
 	} `mapstructure:"pulsar"`
+
 	Event struct {
 		Producer struct {
 			Topic string `mapstructure:"topic"`
@@ -18,4 +20,8 @@ type EventsConfig struct {
 			} `mapstructure:"subscription"`
 		} `mapstructure:"consumer"`
 	} `mapstructure:"event"`
+
+	GRPC struct {
+		Address string `yaml:"address"`
+	} `yaml:"grpc"`
 }

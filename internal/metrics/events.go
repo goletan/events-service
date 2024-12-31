@@ -1,7 +1,7 @@
 package metrics
 
 import (
-	observability "github.com/goletan/observability-library/pkg"
+	"github.com/goletan/observability-library/pkg"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -14,7 +14,7 @@ var (
 			Namespace: "goletan",
 			Subsystem: "events_service",
 			Name:      "published_total",
-			Help:      "Total number of events-service published.",
+			Help:      "Total number of events published.",
 		},
 		[]string{"event_type"},
 	)
@@ -23,7 +23,7 @@ var (
 			Namespace: "goletan",
 			Subsystem: "events_service",
 			Name:      "dropped_total",
-			Help:      "Total number of events-service dropped.",
+			Help:      "Total number of events dropped.",
 		},
 		[]string{"event_type"},
 	)
@@ -32,7 +32,7 @@ var (
 			Namespace: "goletan",
 			Subsystem: "events_service",
 			Name:      "processed_total",
-			Help:      "Total number of events-service processed.",
+			Help:      "Total number of events processed.",
 		},
 		[]string{"event_type"},
 	)
@@ -41,7 +41,7 @@ var (
 			Namespace: "goletan",
 			Subsystem: "events_service",
 			Name:      "sent_total",
-			Help:      "Total number of events-service sent.",
+			Help:      "Total number of events sent.",
 		},
 		[]string{"event_type"},
 	)
@@ -50,7 +50,7 @@ var (
 			Namespace: "goletan",
 			Subsystem: "events_service",
 			Name:      "failed_total",
-			Help:      "Total number of events-service failed.",
+			Help:      "Total number of events failed.",
 		},
 		[]string{"event_type"},
 	)
@@ -59,7 +59,7 @@ var (
 			Namespace: "goletan",
 			Subsystem: "events_service",
 			Name:      "dlq_total",
-			Help:      "Total number of events-service dead letter queue.",
+			Help:      "Total number of events dead letter queue.",
 		},
 		[]string{"event_type"},
 	)
@@ -80,6 +80,25 @@ var (
 			Help:      "Total number of subscriber removed.",
 		},
 		[]string{"event_type"},
+	)
+	EventProcessingLatency = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: "goletan",
+			Subsystem: "events_service",
+			Name:      "processing_latency_seconds",
+			Help:      "Histogram of event processing latencies.",
+			Buckets:   prometheus.ExponentialBuckets(0.001, 2, 15), // 1ms to ~16s
+		},
+		[]string{"event_type"},
+	)
+	AIDecisions = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "goletan",
+			Subsystem: "events_service",
+			Name:      "ai_decisions_total",
+			Help:      "Total number of AI-driven decisions in event processing.",
+		},
+		[]string{"decision_type"},
 	)
 )
 
@@ -118,6 +137,14 @@ func (em *EventsMetrics) Register() error {
 	}
 
 	if err := prometheus.Register(SubscriberRemoved); err != nil {
+		return err
+	}
+
+	if err := prometheus.Register(EventProcessingLatency); err != nil {
+		return err
+	}
+
+	if err := prometheus.Register(AIDecisions); err != nil {
 		return err
 	}
 
@@ -162,4 +189,9 @@ func IncrementSubscriberAdded(eventType string) {
 // IncrementSubscriberRemoved increments the number of subscriber removed counter.
 func IncrementSubscriberRemoved(eventType string) {
 	SubscriberRemoved.WithLabelValues(eventType).Inc()
+}
+
+// RecordProcessingLatency observes the processing latency for a specific event type.
+func RecordProcessingLatency(eventType string, latencySeconds float64) {
+	EventProcessingLatency.WithLabelValues(eventType).Observe(latencySeconds)
 }

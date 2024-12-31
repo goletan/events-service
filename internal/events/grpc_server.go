@@ -3,13 +3,13 @@ package events
 import (
 	"context"
 	"github.com/apache/pulsar-client-go/pulsar"
-	pb "github.com/goletan/events-service/proto"
+	"github.com/goletan/events-library/proto"
 	"github.com/goletan/observability-library/pkg"
 	"go.uber.org/zap"
 )
 
 type GRPCServer struct {
-	pb.UnimplementedEventServiceServer
+	proto.UnimplementedEventServiceServer
 	producer pulsar.Producer
 	obs      *observability.Observability
 }
@@ -21,7 +21,7 @@ func NewGRPCServer(producer pulsar.Producer, obs *observability.Observability) *
 	}
 }
 
-func (s *GRPCServer) SendEvent(ctx context.Context, req *pb.EventRequest) (*pb.EventResponse, error) {
+func (s *GRPCServer) SendEvent(ctx context.Context, req *proto.EventRequest) (*proto.EventResponse, error) {
 	msg := pulsar.ProducerMessage{
 		Key:     req.EventType,
 		Payload: []byte(req.Payload),
@@ -34,5 +34,5 @@ func (s *GRPCServer) SendEvent(ctx context.Context, req *pb.EventRequest) (*pb.E
 	}
 
 	s.obs.Logger.Info("Event sent successfully", zap.String("event_type", req.EventType))
-	return &pb.EventResponse{Status: "success"}, nil
+	return &proto.EventResponse{Status: "success"}, nil
 }

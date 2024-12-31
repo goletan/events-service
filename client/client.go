@@ -2,9 +2,9 @@ package client
 
 import (
 	"context"
+	proto2 "github.com/goletan/events-library/proto"
 	"time"
 
-	"github.com/goletan/events-service/proto"
 	"github.com/goletan/observability-library/pkg"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -20,7 +20,7 @@ type EventClientInterface interface {
 
 // EventsClient is the concrete implementation of EventClientInterface for interacting with the Event Service.
 type EventsClient struct {
-	client proto.EventServiceClient
+	client proto2.EventServiceClient
 	conn   *grpc.ClientConn // store the connection for cleanup
 	obs    *observability.Observability
 }
@@ -37,7 +37,7 @@ func NewEventsClient(address string, obs *observability.Observability) (*EventsC
 	}
 
 	return &EventsClient{
-		client: proto.NewEventServiceClient(conn),
+		client: proto2.NewEventServiceClient(conn),
 		conn:   conn,
 		obs:    obs,
 	}, nil
@@ -49,7 +49,7 @@ func (ec *EventsClient) SendEvent(ctx context.Context, eventType string, payload
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	req := &proto.EventRequest{
+	req := &proto2.EventRequest{
 		EventType: eventType,
 		Payload:   payload,
 	}

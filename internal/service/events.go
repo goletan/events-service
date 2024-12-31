@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/goletan/events-library/proto"
 	"github.com/goletan/events-service/internal/consumer"
 	"github.com/goletan/events-service/internal/metrics"
 	"github.com/goletan/events-service/internal/producer"
 	"github.com/goletan/events-service/internal/types"
-	"github.com/goletan/events-service/proto" // Import your generated gRPC files
 	"github.com/goletan/observability-library/pkg"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"

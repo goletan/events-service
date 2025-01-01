@@ -27,7 +27,12 @@ func main() {
 	}
 
 	// Create and run the Events Service
-	eventsService := service.NewEventsService(cfg, obs)
+	eventsService, err := service.NewEventsService(cfg, obs)
+	if err != nil {
+		obs.Logger.Fatal("Failed to create Events Service", zap.Error(err))
+		return
+	}
+
 	if err := eventsService.Run(shutdownCtx); err != nil {
 		obs.Logger.Fatal("Failed to run Events Service", zap.Error(err))
 	}

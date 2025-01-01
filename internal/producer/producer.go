@@ -5,15 +5,14 @@ import (
 	"time"
 
 	"github.com/apache/pulsar-client-go/pulsar"
-	"github.com/goletan/events-service/internal/metrics" // Import metrics package
 	"github.com/goletan/events-service/internal/types"
 	"github.com/goletan/observability-library/pkg"
 	"go.uber.org/zap"
 )
 
 type Producer struct {
-	client   pulsar.Client
-	producer pulsar.Producer
+	Client   pulsar.Client
+	Producer pulsar.Producer
 	cfg      *types.EventsConfig
 	obs      *observability.Observability
 }
@@ -38,8 +37,8 @@ func NewProducer(cfg *types.EventsConfig, obs *observability.Observability) (*Pr
 	}
 
 	return &Producer{
-		client:   client,
-		producer: producer,
+		Client:   client,
+		Producer: producer,
 		cfg:      cfg,
 		obs:      obs,
 	}, nil
@@ -47,7 +46,7 @@ func NewProducer(cfg *types.EventsConfig, obs *observability.Observability) (*Pr
 
 func (p *Producer) Start(ctx context.Context) {
 	p.obs.Logger.Info("Starting producer...")
-	producer, err := p.client.CreateProducer(pulsar.ProducerOptions{
+	producer, err := p.Client.CreateProducer(pulsar.ProducerOptions{
 		Topic: p.cfg.Event.Producer.Topic,
 	})
 	if err != nil {
@@ -63,8 +62,6 @@ func (p *Producer) SendMessage(ctx context.Context, eventType string, payload []
 	ctx, span := p.obs.Tracer.Start(ctx, "send-message")
 	defer span.End()
 
-	start := time.Now()
-
 	msg := pulsar.ProducerMessage{
 		Payload: payload,
 		Properties: map[string]string{
@@ -73,28 +70,25 @@ func (p *Producer) SendMessage(ctx context.Context, eventType string, payload []
 		},
 	}
 
-	_, err := p.producer.Send(ctx, &msg)
+	_, err := p.Producer.Send(ctx, &msg)
 	if err != nil {
 		p.obs.Logger.Error("Failed to send message", zap.Error(err), zap.String("event_type", eventType))
-		metrics.IncrementEventFailed(eventType) // Increment failure counter
 		return err
 	}
 
 	// Log and record metrics on success
 	p.obs.Logger.Info("Message successfully sent", zap.String("event_type", eventType))
-	metrics.IncrementEventPublished(eventType)                              // Increment published counter
-	metrics.RecordProcessingLatency(eventType, time.Since(start).Seconds()) // Record latency
 	return nil
 }
 
 // Stop gracefully shuts down the producer.
 func (p *Producer) Stop() {
 	p.obs.Logger.Info("Stopping producer...")
-	if p.producer != nil {
-		p.producer.Close()
+	if p.Producer != nil {
+		p.Producer.Close()
 	}
-	if p.client != nil {
-		p.client.Close()
+	if p.Client != nil {
+		p.Client.Close()
 	}
 	p.obs.Logger.Info("Producer stopped.")
 }

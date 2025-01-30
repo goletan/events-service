@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"github.com/goletan/events-service/internal/config"
-	"github.com/goletan/events-service/internal/service"
+	"github.com/goletan/events-service/internal/events"
 	"github.com/goletan/observability-library/pkg"
 	"go.uber.org/zap"
 	"log"
@@ -27,7 +27,7 @@ func main() {
 	}
 
 	// Create and run the Events Service
-	eventsService, err := service.NewEventsService(cfg, obs)
+	eventsService, err := events.NewEventsService(obs, cfg)
 	if err != nil {
 		obs.Logger.Fatal("Failed to create Events Service", zap.Error(err))
 		return

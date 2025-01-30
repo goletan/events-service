@@ -1,4 +1,4 @@
-service_name: "events-service"
+service_name: "events"
 
 pulsar:
   broker:
@@ -12,7 +12,10 @@ event:
       name: "goletan-events-subscription"
 
 grpc:
-  address: "0.0.0.0:50051"
+  address: "events:50051"
+
+http:
+  address: "events:443"
 
 client:
   strategy: "grpc"

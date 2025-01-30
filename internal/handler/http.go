@@ -2,7 +2,7 @@ package handler
 
 import (
 	"encoding/json"
-	"github.com/goletan/events-library/shared/types"
+	"github.com/goletan/events-service/shared/types"
 	observability "github.com/goletan/observability-library/pkg"
 	"go.uber.org/zap"
 	"net/http"

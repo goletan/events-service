@@ -3,17 +3,15 @@ package events
 import (
 	"context"
 	"github.com/apache/pulsar-client-go/pulsar"
-	eventsLib "github.com/goletan/events-library/pkg"
-	"github.com/goletan/events-library/proto"
+	"github.com/goletan/events-service/proto"
 	"github.com/goletan/observability-library/pkg"
 	"go.uber.org/zap"
 )
 
 type GRPCServer struct {
 	proto.UnimplementedEventServiceServer
-	eventsClient *eventsLib.EventsClient
-	producer     pulsar.Producer
-	obs          *observability.Observability
+	producer pulsar.Producer
+	obs      *observability.Observability
 }
 
 func NewGRPCServer(producer pulsar.Producer, obs *observability.Observability) *GRPCServer {

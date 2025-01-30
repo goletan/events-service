@@ -4,6 +4,10 @@ package types
 type EventsConfig struct {
 	ServiceName string `mapstructure:"service_name"`
 
+	Client struct {
+		Strategy string `mapstructure:"strategy"`
+	} `mapstructure:"client"`
+
 	Pulsar struct {
 		Broker struct {
 			URL string `mapstructure:"url"`
@@ -24,4 +28,8 @@ type EventsConfig struct {
 	GRPC struct {
 		Address string `yaml:"address"`
 	} `yaml:"grpc"`
+
+	HTTP struct {
+		Address string `yaml:"address"`
+	} `yaml:"http"`
 }

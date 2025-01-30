@@ -10,7 +10,6 @@ COPY observability-library ./observability-library
 COPY resilience-library ./resilience-library
 COPY security-library ./security-library
 COPY services-library ./services-library
-COPY events-library ./events-library
 
 RUN go work sync
 RUN CGO_ENABLED=0 GOOS=linux go build -o events events-service/cmd/events/main.go

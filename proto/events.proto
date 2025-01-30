@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package events;
+
+option go_package = "github.com/goletan/events-service/proto/events";
+
+service EventService {
+  rpc SendEvent (EventRequest) returns (EventResponse);
+}
+
+message EventRequest {
+  string event_type = 1;
+  string payload = 2;
+}
+
+message EventResponse {
+  string status = 1;
+}

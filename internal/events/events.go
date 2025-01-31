@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/goletan/events-service/internal/config"
 	"github.com/goletan/events-service/internal/metrics"
 	"github.com/goletan/events-service/internal/producer"
 	"github.com/goletan/events-service/internal/types"
@@ -11,18 +12,30 @@ import (
 	"github.com/goletan/observability-library/pkg"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"log"
 	"net"
 )
 
-type EventsService struct {
-	cfg        *types.EventsConfig
-	obs        *observability.Observability
-	producer   *producer.Producer
-	grpcServer *GRPCServer
-	grpcSrv    *grpc.Server
+type Events struct {
+	Config        *types.EventsConfig
+	Observability *observability.Observability
+	producer      *producer.Producer
+	grpcServer    *GRPCServer
+	grpcSrv       *grpc.Server
 }
 
-func NewEventsService(obs *observability.Observability, cfg *types.EventsConfig) (*EventsService, error) {
+func NewEvents() (*Events, error) {
+	obs, err := observability.NewObserver()
+	if err != nil {
+		log.Fatal("Failed to initialize observability", err)
+	}
+
+	// Load configuration
+	cfg, err := config.LoadEventsConfig(obs)
+	if err != nil {
+		obs.Logger.Fatal("Failed to load configuration", zap.Error(err))
+	}
+
 	// Initialize Pulsar producer
 	prod, err := producer.NewProducer(cfg, obs)
 	if err != nil {
@@ -33,22 +46,22 @@ func NewEventsService(obs *observability.Observability, cfg *types.EventsConfig)
 	// Create GRPCServer instance
 	grpcServer := NewGRPCServer(prod.Producer, obs)
 
-	return &EventsService{
-		cfg:        cfg,
-		obs:        obs,
-		producer:   prod,
-		grpcServer: grpcServer,
+	return &Events{
+		Config:        cfg,
+		Observability: obs,
+		producer:      prod,
+		grpcServer:    grpcServer,
 	}, nil
 }
 
-func (es *EventsService) Run(ctx context.Context) error {
-	es.obs.Logger.Info("Initializing Events Service...")
+func (es *Events) Run(ctx context.Context) error {
+	es.Observability.Logger.Info("Initializing Events Service...")
 
-	metrics.InitMetrics(es.obs)
+	metrics.InitMetrics(es.Observability)
 
 	// Start gRPC server
 	if err := es.startServer(ctx); err != nil {
-		es.obs.Logger.Error("Failed to start gRPC server", zap.Error(err))
+		es.Observability.Logger.Error("Failed to start gRPC server", zap.Error(err))
 		return err
 	}
 
@@ -58,38 +71,46 @@ func (es *EventsService) Run(ctx context.Context) error {
 	return nil
 }
 
-func (es *EventsService) startServer(ctx context.Context) error {
+func (es *Events) Stop(ctx context.Context) error {
+	es.Observability.Logger.Info("Stopping Events Service...")
+	es.producer.Stop()
+	es.grpcSrv.Stop()
+
+	return nil
+}
+
+func (es *Events) startServer(ctx context.Context) error {
 	if es.grpcSrv != nil {
 		return fmt.Errorf("gRPC server is already running")
 	}
 
-	if es.cfg.GRPC.Address == "" {
+	if es.Config.GRPC.Address == "" {
 		return fmt.Errorf("gRPC address is not configured")
 	}
 
-	es.obs.Logger.Info("Initializing gRPC server", zap.String("address", es.cfg.GRPC.Address))
+	es.Observability.Logger.Info("Initializing gRPC server", zap.String("address", es.Config.GRPC.Address))
 
 	es.grpcSrv = grpc.NewServer()
 
 	// Register GRPCServer with gRPC runtime
 	proto.RegisterEventServiceServer(es.grpcSrv, es.grpcServer)
 
-	listener, err := net.Listen("tcp", es.cfg.GRPC.Address)
+	listener, err := net.Listen("tcp", es.Config.GRPC.Address)
 	if err != nil {
-		es.obs.Logger.Error("Failed to listen for gRPC", zap.Error(err))
+		es.Observability.Logger.Error("Failed to listen for gRPC", zap.Error(err))
 		return err
 	}
 
 	// Run gRPC server in separate goroutine
 	go func() {
 		if err := es.grpcSrv.Serve(listener); err != nil && !errors.Is(err, grpc.ErrServerStopped) {
-			es.obs.Logger.Error("gRPC server stopped unexpectedly", zap.Error(err))
+			es.Observability.Logger.Error("gRPC server stopped unexpectedly", zap.Error(err))
 		}
 	}()
 
 	// Wait for context cancellation
 	<-ctx.Done()
-	es.obs.Logger.Info("Shutting down gRPC server...")
+	es.Observability.Logger.Info("Shutting down gRPC server...")
 	es.grpcSrv.GracefulStop() // Perform clean shutdown.
 
 	return nil

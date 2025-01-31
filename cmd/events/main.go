@@ -2,9 +2,7 @@ package main
 
 import (
 	"context"
-	"github.com/goletan/events-service/internal/config"
 	"github.com/goletan/events-service/internal/events"
-	"github.com/goletan/observability-library/pkg"
 	"go.uber.org/zap"
 	"log"
 	"os"
@@ -17,29 +15,20 @@ func main() {
 	shutdownCtx, shutdownCancel := setupShutdownContext()
 	defer shutdownCancel()
 
-	// Initialize observability
-	obs := initializeObservability()
-
-	// Load configuration
-	cfg, err := config.LoadEventsConfig(obs)
-	if err != nil {
-		obs.Logger.Fatal("Failed to load configuration", zap.Error(err))
-	}
-
 	// Create and run the Events Service
-	eventsService, err := events.NewEventsService(obs, cfg)
+	newEvents, err := events.NewEvents()
 	if err != nil {
-		obs.Logger.Fatal("Failed to create Events Service", zap.Error(err))
+		log.Fatal("Failed to create events service", err)
 		return
 	}
 
-	if err := eventsService.Run(shutdownCtx); err != nil {
-		obs.Logger.Fatal("Failed to run Events Service", zap.Error(err))
+	if err = newEvents.Run(shutdownCtx); err != nil {
+		newEvents.Observability.Logger.Fatal("Failed to run Events Service", zap.Error(err))
 	}
 
-	obs.Logger.Info("Events Service is running...")
+	newEvents.Observability.Logger.Info("Events Service is running...")
 	<-shutdownCtx.Done()
-	obs.Logger.Info("Shutting down Events Service...")
+	newEvents.Observability.Logger.Info("Shutting down Events Service...")
 }
 
 // setupShutdownContext creates a context with signal handling for graceful shutdown.
@@ -52,13 +41,4 @@ func setupShutdownContext() (context.Context, context.CancelFunc) {
 		cancel()
 	}()
 	return ctx, cancel
-}
-
-// initializeObservability initializes observability components.
-func initializeObservability() *observability.Observability {
-	obs, err := observability.NewObserver()
-	if err != nil {
-		log.Fatal("Failed to initialize observability", err)
-	}
-	return obs
 }

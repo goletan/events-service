@@ -9,4 +9,5 @@ import (
 type Strategy interface {
 	// Send sends an event to its destination.
 	Send(ctx context.Context, event *types.Event) error
+	Listen(ctx context.Context) error
 }

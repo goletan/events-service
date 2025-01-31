@@ -15,6 +15,9 @@ import (
 	"time"
 )
 
+// ListenerCallback defines a function signature for event processing
+type ListenerCallback func(eventType string, payload []byte)
+
 type EventsClient struct {
 	cfg        *types.EventsConfig
 	obs        *observability.Observability
@@ -91,5 +94,21 @@ func (ec *EventsClient) SendEvent(ctx context.Context, event *sharedTypes.Event)
 	ec.metrics.ObserveLatency(event.Type, duration)
 
 	ec.obs.Logger.Info("Event sent successfully", zap.String("event_type", event.Type), zap.Float64("latency_seconds", duration))
+	return nil
+}
+
+// Listen subscribes to a specific event type and processes messages
+func (ec *EventsClient) Listen(ctx context.Context, eventType string, callback ListenerCallback) error {
+	ec.obs.Logger.Info("Listening for events", zap.String("event_type", eventType))
+
+	err := ec.strategy.Listen(ctx, eventType, func(event *types.Event) {
+		callback(event.Type, []byte(event.Payload))
+	})
+
+	if err != nil {
+		ec.obs.Logger.Error("Failed to subscribe to event", zap.String("event_type", eventType), zap.Error(err))
+		return err
+	}
+
 	return nil
 }
